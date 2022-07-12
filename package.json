@@ -1,0 +1,19 @@
+{
+  "name": "pdf-extractor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js" 
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^2.0.19",
+    "pdf-parse": "^1.1.1",
+    "pdf-table-extractor": "^1.0.3",
+    "pdf.js-extract": "^0.2.0",
+    "pdf2json": "^2.0.1"
+  }
+}
