@@ -3,13 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index1.js" 
+    "start": "nodemon invoiceExtractor.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ajv": "^6.12.6",
     "nodemon": "^2.0.19",
     "pdf-parse": "^1.1.1",
     "pdf-table-extractor": "^1.0.3",

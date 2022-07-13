@@ -1,37 +1,32 @@
-const PDFExtract = require("pdf.js-extract").PDFExtract;
+import { PDFExtract } from "pdf.js-extract";
+import Ajv from "ajv";
+import { creditNoteSchema } from "./Schemas/creditNoteSchema.js";
+
+const pdfExtract = new PDFExtract();
+const ajv = new Ajv()
+
 
 function tableData(data, index, slice1 = 1, slice2 = 0) {
   const mapped = data.map((each) => { 
-    if(each && Math.floor(each.x) == Math.floor(index.x)) {
-      return each;
-    }
+    if(each && Math.floor(each.x) == Math.floor(index.x)) { return each }
   }).filter((each) => each);
-
-  if(slice2){
-    return mapped.map((each) => each.str).slice(slice1, slice2).join(" ");
-  }else{
-    const filtered = mapped.map((each) => each.str)
-    return filtered.slice(1).join(" ");
-  }
+  
+  return slice2 ? mapped.map((each) => each.str).slice(slice1, slice2).join(" ") : mapped.map((each) => each.str).slice(1).join(" ");
 }
 
 function isCreditNote(data) {
-    if(data.find((each) => each.str == "Credit Note")){
-        return true;
-    }else{
-        return false;
-    }
+    return data.find((each) => each.str == "Credit Note") ? true : false;
 }
 
+
 let ans = {};
-const pdfExtract = new PDFExtract();
 const options = {};
-pdfExtract.extract("credit.pdf", options)
+pdfExtract.extract("./pdfs/pdf-credit.pdf", options)
   .then(data => { return data.pages[0].content })
   .then(data => {
-    if(isCreditNote(data)){ return data}
+    if(isCreditNote(data)){return data}
     else{throw "Invalid Credit Invoice";}
-    })
+  })
   .then(data => {
     let ind0 = data.findIndex((each) => each.str.search("Purchase Order Number:") != -1);
     let ind1 = data.findIndex((each) => each.str.search("Credit Note No:") != -1);
@@ -59,7 +54,11 @@ pdfExtract.extract("credit.pdf", options)
     ans["Taxes"] = tableData(data, ind10, 1, 2);
     ans["Total"] = tableData(data, ind11, 1, 2);
 
-    console.log(ans);
+    return ans;
+  })
+  .then((ans) => {
+    const valid = ajv.validate(creditNoteSchema, ans)
+    if(!valid) {throw ajv.errors} else console.log(ans);
   })
   .catch(err=> console.log(err));
 

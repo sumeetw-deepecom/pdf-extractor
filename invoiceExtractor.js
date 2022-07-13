@@ -1,4 +1,10 @@
-const PDFExtract = require("pdf.js-extract").PDFExtract;
+import { PDFExtract } from "pdf.js-extract";
+import Ajv from "ajv";
+import { invoiceSchema } from "./Schemas/invoiceSchema.js";
+
+const ajv = new Ajv()
+const pdfExtract = new PDFExtract();
+
 
 let otherPresent = false;
 let otherY = 0;
@@ -23,19 +29,14 @@ function tableData(data, index, slice1 = 1, slice2 = 0) {
 }
 
 function isInvoice(data) {
-  if(data.find((each) => each.str == "Tax Invoice")){
-      return true;
-  }else{
-      return false;
-  }
+  return data.find((each) => each.str == "Tax Invoice") ? true : false;
 }
 
 let ans = {};
 let other = {};
 let ind6;
-const pdfExtract = new PDFExtract();
 const options = {};
-pdfExtract.extract("Other.pdf", options)
+pdfExtract.extract("./pdfs/pdf-other.pdf", options)
   .then(data => { return data.pages[0].content })
   .then(data => {
     if(isInvoice(data)){ return data}
@@ -80,7 +81,15 @@ pdfExtract.extract("Other.pdf", options)
       other["Total"] = tableData(data, ind11, 2, 3);
     }
 
-    console.log([ans, other]);
+    return [ans, other];
+  })
+  .then((ans) => {
+    let valid1 = ajv.validate(invoiceSchema, ans[0]);
+    let valid2;
+    if(otherPresent){
+      valid2 = ajv.validate(invoiceSchema, ans[1]);
+    }
+    if(!valid1 || !valid2) {throw ajv.errors} else console.log(ans);
   })
   .catch(err=> console.log(err));
 
