@@ -18,7 +18,7 @@ function tableData(data, index, slice1 = 1, slice2 = 0) {
     return mapped.map((each) => each.str).filter((each) => each).slice(slice1, slice2).join(" ");
   }else{
     const filtered = mapped.map((each) => each.str).filter((each) => each)
-    return filtered.slice(1, filtered.length-1).join(" ");
+    return otherPresent ? filtered.slice(1, filtered.length-1).join(" ") : filtered.slice(1).join(" ");
   }
 }
 
@@ -28,8 +28,9 @@ let other = {};
 let ind6;
 const pdfExtract = new PDFExtract();
 const options = {};
-pdfExtract.extract("52ef5f79673cd8e23f64621586bb38f6d5c341de.pdf", options)
-  .then(data => data.pages[0].content)
+pdfExtract.extract("79680d66843595689ee236af431084e20ba6e424.pdf", options)
+  .then(data => { return data.pages[0].content })
+  // .then(data => data.pages[0].content)
   .then(data => {
     let ind1 = data.findIndex((each) => each.str == "Purchase Order Number");
     let ind2 = data.findIndex((each) => each.str == "Invoice Number");
@@ -47,8 +48,8 @@ pdfExtract.extract("52ef5f79673cd8e23f64621586bb38f6d5c341de.pdf", options)
     ans["Invoice Number"] = data[ind2 + 2].str;
     ans["Invoice Date"] = data[ind3 + 2].str;
     ans["Order Date"] = data[ind4 + 2].str;
-    ans["Description"] = tableData(data, ind5, 1); 
     ans["HSN"] = tableData(data, ind6, 1);
+    ans["Description"] = tableData(data, ind5, 1); 
     ans["Unit Price"] = tableData(data, ind7, 1, 2);
     ans["Discount"] = tableData(data, ind8, 1, 2);
     ans["Product Value"] = tableData(data, ind9, 2, 3);
