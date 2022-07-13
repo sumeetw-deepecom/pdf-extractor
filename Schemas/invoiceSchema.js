@@ -2,10 +2,10 @@ export const invoiceSchema = {
     type: "object",
     properties: {
       'Purchase Order Number': {type: "string", minLength: 12, maxLength: 12},
-      'Invoice Number': {type: "string", minLength: 10, maxLength: 10},
+      'Invoice Number': {type: "string", minLength: 10, maxLength: 11},
       'Invoice Date': {type: "string", minLength: 16, maxLength: 20},
       'Order Date': {type: "string", minLength: 16, maxLength: 20},
-      'HSN': {type: "string", minLength: 4, maxLength: 5},
+      'HSN': {type: "string", minLength: 4, maxLength: 6},
       'Description': {type: "string", minLength: 1},
       'Unit Price': {type: "string", minLength: 3},
       'Discount': {type: "string", minLength: 1},

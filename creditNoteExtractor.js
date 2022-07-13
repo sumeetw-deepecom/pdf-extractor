@@ -1,6 +1,8 @@
 import { PDFExtract } from "pdf.js-extract";
 import Ajv from "ajv";
 import { creditNoteSchema } from "./Schemas/creditNoteSchema.js";
+import fs from 'fs';
+import request from "request-promise-native";
 
 const pdfExtract = new PDFExtract();
 const ajv = new Ajv()
@@ -18,47 +20,56 @@ function isCreditNote(data) {
     return data.find((each) => each.str == "Credit Note") ? true : false;
 }
 
+async function downloadPDF(pdfURL, outputFilename) {
+  let pdfBuffer = await request.get({uri: pdfURL, encoding: null});
+  console.log("Writing downloaded PDF file to " + outputFilename + "...");
+  fs.writeFileSync(outputFilename, pdfBuffer);
+}
+
 
 let ans = {};
 const options = {};
-pdfExtract.extract("./pdfs/pdf-credit.pdf", options)
-  .then(data => { return data.pages[0].content })
-  .then(data => {
-    if(isCreditNote(data)){return data}
-    else{throw "Invalid Credit Invoice";}
-  })
-  .then(data => {
-    let ind0 = data.findIndex((each) => each.str.search("Purchase Order Number:") != -1);
-    let ind1 = data.findIndex((each) => each.str.search("Credit Note No:") != -1);
-    let ind2 = data.findIndex((each) => each.str.search("Order Date:") != -1);
-    let ind3 = data.findIndex((each) => each.str.search("Credit Note Date:") != -1);
-    let ind4 = data.findIndex((each) => each.str.search("Invoice No and Date:") != -1);
-    let ind5 = data.find((each) => each.str == "Description");
-    let ind6 = data.find((each) => each.str == "HSN");
-    let ind7 = data.find((each) => each.str == "Unit Price");
-    let ind8 = data.find((each) => each.str == "Discount");
-    let ind9 = data.find((each) => each.str == "Product");
-    let ind10 = data.find((each) => each.str == "Taxes");
-    let ind11 = data.find((each) => each.str == "Total");
+async function complete() {
+  await downloadPDF("https://s3-ap-southeast-1.amazonaws.com/meesho-supply-v2/invoices/supplierToReseller/a1ee39e758d5372c135b844d13e64689c79ca5ea.pdf", "./pdfs/somePDF.pdf");
+  pdfExtract.extract("./pdfs/somePDF.pdf", options)
+    .then(data => { return data.pages[0].content })
+    .then(data => {
+      if(isCreditNote(data)){return data}
+      else{throw "Invalid Credit Invoice";}
+    })
+    .then(data => {
+      let ind0 = data.findIndex((each) => each.str.search("Purchase Order Number:") != -1);
+      let ind1 = data.findIndex((each) => each.str.search("Credit Note No:") != -1);
+      let ind2 = data.findIndex((each) => each.str.search("Order Date:") != -1);
+      let ind3 = data.findIndex((each) => each.str.search("Credit Note Date:") != -1);
+      let ind4 = data.findIndex((each) => each.str.search("Invoice No and Date:") != -1);
+      let ind5 = data.find((each) => each.str == "Description");
+      let ind6 = data.find((each) => each.str == "HSN");
+      let ind7 = data.find((each) => each.str == "Unit Price");
+      let ind8 = data.find((each) => each.str == "Discount");
+      let ind9 = data.find((each) => each.str == "Product");
+      let ind10 = data.find((each) => each.str == "Taxes");
+      let ind11 = data.find((each) => each.str == "Total");
 
-    ans["Purchase Order Number"] = data[ind0].str.slice(23);
-    ans["Credit Note No"] = data[ind1].str.slice(16);
-    ans["Order Date"] = data[ind2].str.slice(12);
-    ans["Credit Note Date"] = data[ind3].str.slice(18);
-    ans["Invoice No and Date"] = data[ind4].str.slice(21);
-    ans["HSN"] = tableData(data, ind6, 1);
-    ans["Description"] = tableData(data, ind5, 1); 
-    ans["Unit Price"] = tableData(data, ind7, 1, 2);
-    ans["Discount"] = tableData(data, ind8, 1, 2);
-    ans["Product Value"] = tableData(data, ind9, 2, 3);
-    ans["Taxes"] = tableData(data, ind10, 1, 2);
-    ans["Total"] = tableData(data, ind11, 1, 2);
+      ans["Purchase Order Number"] = data[ind0].str.slice(23);
+      ans["Credit Note No"] = data[ind1].str.slice(16);
+      ans["Order Date"] = data[ind2].str.slice(12);
+      ans["Credit Note Date"] = data[ind3].str.slice(18);
+      ans["Invoice No and Date"] = data[ind4].str.slice(21);
+      ans["HSN"] = tableData(data, ind6, 1);
+      ans["Description"] = tableData(data, ind5, 1); 
+      ans["Unit Price"] = tableData(data, ind7, 1, 2);
+      ans["Discount"] = tableData(data, ind8, 1, 2);
+      ans["Product Value"] = tableData(data, ind9, 2, 3);
+      ans["Taxes"] = tableData(data, ind10, 1, 2);
+      ans["Total"] = tableData(data, ind11, 1, 2);
 
-    return ans;
-  })
-  .then((ans) => {
-    const valid = ajv.validate(creditNoteSchema, ans)
-    if(!valid) {throw ajv.errors} else console.log(ans);
-  })
-  .catch(err=> console.log(err));
-
+      return ans;
+    })
+    .then((ans) => {
+      const valid = ajv.validate(creditNoteSchema, ans)
+      if(!valid) {throw ajv.errors} else console.log(ans);
+    })
+    .catch(err=> console.log(err));
+}
+complete();

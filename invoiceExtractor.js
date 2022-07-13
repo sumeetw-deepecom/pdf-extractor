@@ -1,6 +1,8 @@
 import { PDFExtract } from "pdf.js-extract";
 import Ajv from "ajv";
 import { invoiceSchema } from "./Schemas/invoiceSchema.js";
+import fs from 'fs';
+import request from "request-promise-native";
 
 const ajv = new Ajv()
 const pdfExtract = new PDFExtract();
@@ -32,64 +34,75 @@ function isInvoice(data) {
   return data.find((each) => each.str == "Tax Invoice") ? true : false;
 }
 
+async function downloadPDF(pdfURL, outputFilename) {
+  let pdfBuffer = await request.get({uri: pdfURL, encoding: null});
+  console.log("Writing downloaded PDF file to " + outputFilename + "...");
+  fs.writeFileSync(outputFilename, pdfBuffer);
+}
+
 let ans = {};
 let other = {};
 let ind6;
 const options = {};
-pdfExtract.extract("./pdfs/pdf-other.pdf", options)
-  .then(data => { return data.pages[0].content })
-  .then(data => {
-    if(isInvoice(data)){ return data}
-    else{throw "Invalid Invoice";}
-  })
-  .then(data => {
-    let ind1 = data.findIndex((each) => each.str == "Purchase Order Number");
-    let ind2 = data.findIndex((each) => each.str == "Invoice Number");
-    let ind3 = data.findIndex((each) => each.str == "Invoice Date");
-    let ind4 = data.findIndex((each) => each.str == "Order Date");
-    let ind5 = data.find((each) => each.str == "Description");
-        ind6 = data.find((each) => each.str == "HSN");
-    let ind7 = data.find((each) => each.str == "Unit Price");
-    let ind8 = data.find((each) => each.str == "Discount");
-    let ind9 = data.find((each) => each.str == "Product");
-    let ind10 = data.find((each) => each.str == "Taxes");
-    let ind11 = data.find((each) => each.str == "Total");
 
-    ans["Purchase Order Number"] = data[ind1 + 2].str;
-    ans["Invoice Number"] = data[ind2 + 2].str;
-    ans["Invoice Date"] = data[ind3 + 2].str;
-    ans["Order Date"] = data[ind4 + 2].str;
-    ans["HSN"] = tableData(data, ind6, 1);
-    ans["Description"] = tableData(data, ind5, 1); 
-    ans["Unit Price"] = tableData(data, ind7, 1, 2);
-    ans["Discount"] = tableData(data, ind8, 1, 2);
-    ans["Product Value"] = tableData(data, ind9, 2, 3);
-    ans["Taxes"] = tableData(data, ind10, 1, 2);
-    ans["Total"] = tableData(data, ind11, 1, 2);
+async function complete() {
+  await downloadPDF("https://s3-ap-southeast-1.amazonaws.com/meesho-supply-v2/invoices/supplierToReseller/a1ee39e758d5372c135b844d13e64689c79ca5ea.pdf", "./pdfs/somePDF.pdf");
+  pdfExtract.extract("./pdfs/somePDF.pdf", options)
+    .then(data => { return data.pages[0].content })
+    .then(data => {
+      if(isInvoice(data)){ return data}
+      else{throw "Invalid Invoice";}
+    })
+    .then(data => {
+      let ind1 = data.findIndex((each) => each.str == "Purchase Order Number");
+      let ind2 = data.findIndex((each) => each.str == "Invoice Number");
+      let ind3 = data.findIndex((each) => each.str == "Invoice Date");
+      let ind4 = data.findIndex((each) => each.str == "Order Date");
+      let ind5 = data.find((each) => each.str == "Description");
+          ind6 = data.find((each) => each.str == "HSN");
+      let ind7 = data.find((each) => each.str == "Unit Price");
+      let ind8 = data.find((each) => each.str == "Discount");
+      let ind9 = data.find((each) => each.str == "Product");
+      let ind10 = data.find((each) => each.str == "Taxes");
+      let ind11 = data.find((each) => each.str == "Total");
 
-    if(otherPresent){
-      other["Purchase Order Number"] = data[ind1 + 2].str;
-      other["Invoice Number"] = data[ind2 + 2].str;
-      other["Invoice Date"] = data[ind3 + 2].str;
-      other["Order Date"] = data[ind4 + 2].str;
-      other["Description"] = data.map((each) => { if(each && Math.floor(each.x) == Math.floor(ind5.x) && Math.floor(each.y) >= Math.floor(otherY)) { return each.str }}).filter((each) => each).join(" ");
-      other["HSN"] = tableData(data, ind6, 2, 3);
-      other["Unit Price"] = tableData(data, ind7, 2, 3);
-      other["Discount"] = tableData(data, ind8, 2, 3);
-      other["Product Value"] = tableData(data, ind9, 3, 4);
-      other["Taxes"] = tableData(data, ind10, 2, 3);
-      other["Total"] = tableData(data, ind11, 2, 3);
-    }
+      ans["Purchase Order Number"] = data[ind1 + 2].str;
+      ans["Invoice Number"] = data[ind2 + 2].str;
+      ans["Invoice Date"] = data[ind3 + 2].str;
+      ans["Order Date"] = data[ind4 + 2].str;
+      ans["HSN"] = tableData(data, ind6, 1);
+      ans["Description"] = tableData(data, ind5, 1); 
+      ans["Unit Price"] = tableData(data, ind7, 1, 2);
+      ans["Discount"] = tableData(data, ind8, 1, 2);
+      ans["Product Value"] = tableData(data, ind9, 2, 3);
+      ans["Taxes"] = tableData(data, ind10, 1, 2);
+      ans["Total"] = tableData(data, ind11, 1, 2);
 
-    return [ans, other];
-  })
-  .then((ans) => {
-    let valid1 = ajv.validate(invoiceSchema, ans[0]);
-    let valid2;
-    if(otherPresent){
-      valid2 = ajv.validate(invoiceSchema, ans[1]);
-    }
-    if(!valid1 || !valid2) {throw ajv.errors} else console.log(ans);
-  })
-  .catch(err=> console.log(err));
+      if(otherPresent){
+        other["Purchase Order Number"] = data[ind1 + 2].str;
+        other["Invoice Number"] = data[ind2 + 2].str;
+        other["Invoice Date"] = data[ind3 + 2].str;
+        other["Order Date"] = data[ind4 + 2].str;
+        other["Description"] = data.map((each) => { if(each && Math.floor(each.x) == Math.floor(ind5.x) && Math.floor(each.y) >= Math.floor(otherY)) { return each.str }}).filter((each) => each).join(" ");
+        other["HSN"] = tableData(data, ind6, 2, 3);
+        other["Unit Price"] = tableData(data, ind7, 2, 3);
+        other["Discount"] = tableData(data, ind8, 2, 3);
+        other["Product Value"] = tableData(data, ind9, 3, 4);
+        other["Taxes"] = tableData(data, ind10, 2, 3);
+        other["Total"] = tableData(data, ind11, 2, 3);
+      }
+      return [ans, other];
+    })
+    .then((ans) => {
+      let valid1 = ajv.validate(invoiceSchema, ans[0]);
+      let valid2 = true;
+
+      if(otherPresent){
+        valid2 = ajv.validate(invoiceSchema, ans[1]);
+      }
+      if(!valid1 || !valid2) {throw ajv.errors} else console.log(ans);
+    })
+    .catch(err=> console.log(err));
+}
+complete();
 

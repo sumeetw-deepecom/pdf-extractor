@@ -6,7 +6,7 @@ export const creditNoteSchema = {
       'Order Date': {type: "string", minLength: 16, maxLength: 20},
       'Credit Note Date': {type: "string", minLength: 16, maxLength: 20},
       'Invoice No and Date': {type: "string", minLength: 26, maxLength: 30},
-      'HSN': {type: "string", minLength: 4, maxLength: 5},
+      'HSN': {type: "string", minLength: 4, maxLength: 6},
       'Description': {type: "string", minLength: 1},
       'Unit Price': {type: "string", minLength: 3},
       'Discount': {type: "string", minLength: 1},
