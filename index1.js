@@ -7,20 +7,31 @@ function tableData(data, index, slice1 = 1, slice2 = 0) {
     }
   }).filter((each) => each);
 
-
   if(slice2){
-    return mapped.map((each) => each.str).filter((each) => each).slice(slice1, slice2).join(" ");
+    return mapped.map((each) => each.str).slice(slice1, slice2).join(" ");
   }else{
-    const filtered = mapped.map((each) => each.str).filter((each) => each)
+    const filtered = mapped.map((each) => each.str)
     return filtered.slice(1).join(" ");
   }
+}
+
+function isCreditNote(data) {
+    if(data.find((each) => each.str == "Credit Note")){
+        return true;
+    }else{
+        return false;
+    }
 }
 
 let ans = {};
 const pdfExtract = new PDFExtract();
 const options = {};
 pdfExtract.extract("credit.pdf", options)
-.then(data => { console.log(data.pages[0].content); return data.pages[0].content })
+  .then(data => { return data.pages[0].content })
+  .then(data => {
+    if(isCreditNote(data)){ return data}
+    else{throw "Invalid Credit Invoice";}
+    })
   .then(data => {
     let ind0 = data.findIndex((each) => each.str.search("Purchase Order Number:") != -1);
     let ind1 = data.findIndex((each) => each.str.search("Credit Note No:") != -1);

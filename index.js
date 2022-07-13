@@ -15,22 +15,32 @@ function tableData(data, index, slice1 = 1, slice2 = 0) {
   }
 
   if(slice2){
-    return mapped.map((each) => each.str).filter((each) => each).slice(slice1, slice2).join(" ");
+    return mapped.map((each) => each.str).slice(slice1, slice2).join(" ");
   }else{
-    const filtered = mapped.map((each) => each.str).filter((each) => each)
+    const filtered = mapped.map((each) => each.str)
     return otherPresent ? filtered.slice(1, filtered.length-1).join(" ") : filtered.slice(1).join(" ");
   }
 }
 
+function isInvoice(data) {
+  if(data.find((each) => each.str == "Tax Invoice")){
+      return true;
+  }else{
+      return false;
+  }
+}
 
 let ans = {};
 let other = {};
 let ind6;
 const pdfExtract = new PDFExtract();
 const options = {};
-pdfExtract.extract("79680d66843595689ee236af431084e20ba6e424.pdf", options)
+pdfExtract.extract("Other.pdf", options)
   .then(data => { return data.pages[0].content })
-  // .then(data => data.pages[0].content)
+  .then(data => {
+    if(isInvoice(data)){ return data}
+    else{throw "Invalid Invoice";}
+  })
   .then(data => {
     let ind1 = data.findIndex((each) => each.str == "Purchase Order Number");
     let ind2 = data.findIndex((each) => each.str == "Invoice Number");
