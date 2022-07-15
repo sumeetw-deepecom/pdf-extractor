@@ -3,6 +3,8 @@ import Ajv from "ajv";
 import { invoiceSchema } from "./Schemas/invoiceSchema.js";
 import fs from 'fs';
 import request from "request-promise-native";
+import { from } from 'ix/asynciterable/index.js';
+import { map } from 'ix/asynciterable/operators/index.js';
 
 const ajv = new Ajv()
 const pdfExtract = new PDFExtract();
@@ -40,13 +42,20 @@ async function downloadPDF(pdfURL, outputFilename) {
   fs.writeFileSync(outputFilename, pdfBuffer);
 }
 
+const source = async function* () {
+  yield "link";
+  yield "link";
+  yield "link";
+  yield "link";
+};
+
 let ans = {};
 let other = {};
 let ind6;
 const options = {};
 
-async function complete() {
-  await downloadPDF("https://s3-ap-southeast-1.amazonaws.com/meesho-supply-v2/invoices/supplierToReseller/a1ee39e758d5372c135b844d13e64689c79ca5ea.pdf", "./pdfs/somePDF.pdf");
+async function complete(url) {
+  await downloadPDF(url, "./pdfs/somePDF.pdf");
   pdfExtract.extract("./pdfs/somePDF.pdf", options)
     .then(data => { return data.pages[0].content })
     .then(data => {
@@ -104,5 +113,11 @@ async function complete() {
     })
     .catch(err=> console.log(err));
 }
-complete();
 
+const results = from(source()).pipe(
+  map(async x => complete(x))
+);
+
+for await (let item of results) {
+  console.log(`Next: ${item}`);
+}
