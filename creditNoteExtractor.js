@@ -29,10 +29,13 @@ async function downloadPDF(pdfURL, outputFilename) {
 }
 
 const source = async function* () {
-  yield "link";
-  yield "link";
-  yield "link";
-  yield "link";
+  var csv = fs.readFileSync("ms.csv")
+  var array = csv.toString().split("\r");
+
+  for(let i=3; i<array.length; i++){
+      let properties = array[i].split(",");
+      yield properties[properties.length-2];
+  }
 };
 
 let ans = {};
